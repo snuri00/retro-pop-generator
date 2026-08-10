@@ -17,6 +17,10 @@ const els = {
   paletteRow: $("paletteRow"),
   pstrength: $("pstrength"),
   pstrengthVal: $("pstrengthVal"),
+  pixelate: $("pixelate"),
+  pixelColors: $("pixelColors"),
+  pixelColorsVal: $("pixelColorsVal"),
+  pixelColorsRow: $("pixelColorsRow"),
   seed: $("seed"),
   randomSeed: $("randomSeed"),
   go: $("go"),
@@ -60,6 +64,11 @@ bind(els.weight, els.weightVal, 2);
 bind(els.steps, els.stepsVal, 0);
 bind(els.guidance, els.guidanceVal, 1);
 bind(els.pstrength, els.pstrengthVal, 2);
+bind(els.pixelColors, els.pixelColorsVal, 0);
+
+els.pixelate.addEventListener("change", () => {
+  els.pixelColorsRow.hidden = els.pixelate.value === "0";
+});
 
 const refreshGo = () => {
   els.go.disabled = !ready || els.prompt.value.trim().length === 0;
@@ -67,18 +76,39 @@ const refreshGo = () => {
 
 els.prompt.addEventListener("input", refreshGo);
 
-els.style.addEventListener("change", () => {
-  const spec = styleNegatives[els.style.value];
-  els.weightRow.hidden = !spec || !spec.hasLora;
+const setRange = (el, value) => {
+  if (typeof value !== "number") return;
+  el.value = String(value);
+  el.dispatchEvent(new Event("input"));
+};
 
+const applyPreset = (id) => {
+  const spec = styleNegatives[id];
+  if (!spec) return;
+
+  els.weightRow.hidden = !spec.hasLora;
+  if (spec.hasLora) setRange(els.weight, spec.weight);
+  setRange(els.steps, spec.steps);
+  setRange(els.guidance, spec.guidance);
+  setRange(els.pixelColors, spec.pixelColors);
+
+  els.pixelate.value = String(spec.pixelateTo ?? 0);
+  els.pixelColorsRow.hidden = els.pixelate.value === "0";
+
+  els.palette.value = spec.palette || "none";
+  els.paletteRow.hidden = els.palette.value === "none";
+
+  // The negative is typed text, so an edited one is never overwritten.
   const current = els.negative.value.trim();
-  const isUntouched = Object.values(styleNegatives).some(
-    (s) => s.negative.trim() === current,
+  const isPreset = Object.values(styleNegatives).some(
+    (s) => s.negative && s.negative.trim() === current,
   );
-  if (spec && (current === "" || isUntouched)) {
+  if (spec.negative && (current === "" || isPreset)) {
     els.negative.value = spec.negative;
   }
-});
+};
+
+els.style.addEventListener("change", () => applyPreset(els.style.value));
 
 els.palette.addEventListener("change", () => {
   els.paletteRow.hidden = els.palette.value === "none";
@@ -92,9 +122,9 @@ async function boot() {
   const cfg = await fetch("/api/config").then((r) => r.json());
 
   styleNegatives = Object.fromEntries(
-    cfg.styles.map((s) => [
+    (cfg.styles || []).map((s) => [
       s.id,
-      { negative: s.negative, hasLora: s.id !== "none" && s.id !== "impressionist" },
+      { ...s, negative: s.negative || "", hasLora: Boolean(s.hasLora) },
     ]),
   );
 
@@ -103,16 +133,20 @@ async function boot() {
       .map((s) => `<option value="${s.id}">${s.label}</option>`)
       .join("");
     els.style.value = "ksenii";
-    els.negative.value = styleNegatives.ksenii.negative;
-    els.weightRow.hidden = false;
 
     els.size.innerHTML = cfg.sizes
       .map((s) => `<option value="${s}">${SIZE_LABELS[s] || s}</option>`)
       .join("");
 
+    els.pixelate.innerHTML = (cfg.pixelSizes || [0])
+      .map((p) => `<option value="${p}">${p === 0 ? "Off" : `${p} px tall`}</option>`)
+      .join("");
+
     els.palette.innerHTML = cfg.palettes
       .map((p) => `<option value="${p}">${PALETTE_LABELS[p] || p}</option>`)
       .join("");
+
+    applyPreset("ksenii");
   }
 
   if (cfg.ready) {
@@ -138,6 +172,10 @@ async function loadGallery() {
     .join("");
   [...els.gallery.querySelectorAll("img")].forEach((img) => {
     img.addEventListener("click", () => show(img.dataset.file));
+    img.addEventListener("error", () => {
+      img.remove();
+      els.galleryEmpty.hidden = els.gallery.children.length > 0;
+    });
   });
 }
 
@@ -164,6 +202,8 @@ els.go.addEventListener("click", async () => {
     seed: Number(els.seed.value),
     palette: els.palette.value,
     palette_strength: Number(els.pstrength.value),
+    pixelate_to: Number(els.pixelate.value),
+    pixel_colors: Number(els.pixelColors.value),
   };
 
   const { id } = await fetch("/api/generate", {

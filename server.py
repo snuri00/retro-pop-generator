@@ -30,8 +30,28 @@ app = FastAPI(title="Retro Pop - Generator")
 
 _jobs: dict[str, engine.Job] = {}
 _queue: "queue.Queue[str]" = queue.Queue()
-_gallery: list[dict] = json.load(open(META)) if os.path.exists(META) else []
 _ready = {"value": False}
+
+
+def _on_disk(entries: list[dict]) -> list[dict]:
+    """Keep only entries whose image is still in out/, so files deleted by hand
+    do not leave broken slots in the history strip."""
+    kept = []
+    for e in entries:
+        name = e.get("file") or ""
+        if name and os.path.exists(os.path.join(OUT, os.path.basename(name))):
+            kept.append(e)
+    return kept
+
+
+def _save_gallery() -> None:
+    json.dump(_gallery, open(META, "w"), indent=2, ensure_ascii=False)
+
+
+_loaded: list[dict] = json.load(open(META)) if os.path.exists(META) else []
+_gallery: list[dict] = _on_disk(_loaded)
+if len(_gallery) != len(_loaded):
+    _save_gallery()
 
 
 class GenerateBody(BaseModel):
@@ -45,6 +65,8 @@ class GenerateBody(BaseModel):
     seed: int = -1
     palette: str = "none"
     palette_strength: float = 0.7
+    pixelate_to: int = 0
+    pixel_colors: int = 24
 
 
 def _worker() -> None:
@@ -76,7 +98,7 @@ def _worker() -> None:
             }
             _gallery.insert(0, entry)
             del _gallery[200:]
-            json.dump(_gallery, open(META, "w"), indent=2, ensure_ascii=False)
+            _save_gallery()
         except Exception as exc:
             job.status = "error"
             job.error = f"{type(exc).__name__}: {exc}"
@@ -89,11 +111,23 @@ def config():
     return {
         "ready": _ready["value"],
         "styles": [
-            {"id": k, "label": v["label"], "negative": v["negative"]}
+            {
+                "id": k,
+                "label": v["label"],
+                "negative": v["negative"],
+                "hasLora": bool(v["repo"]),
+                "weight": v.get("weight", 0.35),
+                "steps": v.get("steps", 24),
+                "guidance": v.get("guidance", 6.0),
+                "pixelateTo": v.get("pixelate_to", 0),
+                "pixelColors": v.get("pixel_colors", 24),
+                "palette": v.get("palette", "none"),
+            }
             for k, v in engine.STYLES.items()
         ],
         "sizes": list(engine.SIZES),
         "palettes": ["none", *PALETTE_NAMES],
+        "pixelSizes": [0, 48, 64, 96, 128, 192, 256],
         "defaultNegative": engine.DEFAULT_NEGATIVE,
         "queued": _queue.qsize(),
     }
@@ -128,6 +162,11 @@ def job_status(job_id: str):
 
 @app.get("/api/gallery")
 def gallery():
+    global _gallery
+    alive = _on_disk(_gallery)
+    if len(alive) != len(_gallery):
+        _gallery = alive
+        _save_gallery()
     return _gallery[:60]
 
 

@@ -43,8 +43,19 @@ IMPRESSIONIST_NEGATIVE = (
     "flat colour, hard edges, black outlines, cel shading, anime, cgi, smooth gradients"
 )
 
-STYLES: dict[str, dict[str, str]] = {
+PIXEL_NEGATIVE = (
+    f"{BASE_NEGATIVE}, photo, photorealistic, 3d render, painting, brushstrokes, "
+    "smooth gradients, soft focus, depth of field, anti-aliased, realistic"
+)
+
+STYLES: dict[str, dict] = {
     "none": {
+        "steps": 24,
+        "guidance": 6.0,
+        "pixelate_to": 0,
+        "pixel_colors": 24,
+        "palette": "none",
+        "weight": 0.0,
         "label": "None (prompt only)",
         "repo": "",
         "file": "",
@@ -52,6 +63,12 @@ STYLES: dict[str, dict[str, str]] = {
         "negative": BASE_NEGATIVE,
     },
     "kappa": {
+        "steps": 24,
+        "guidance": 6.0,
+        "pixelate_to": 0,
+        "pixel_colors": 24,
+        "palette": "none",
+        "weight": 0.35,
         "label": "City pop, KappaNeuro (stable colour)",
         "repo": "KappaNeuro/hiroshi-nagai-style",
         "file": "Hiroshi Nagai Style.safetensors",
@@ -59,6 +76,12 @@ STYLES: dict[str, dict[str, str]] = {
         "negative": CITY_POP_NEGATIVE,
     },
     "ksenii": {
+        "steps": 24,
+        "guidance": 6.0,
+        "pixelate_to": 0,
+        "pixel_colors": 24,
+        "palette": "none",
+        "weight": 0.35,
         "label": "City pop, kseniiaNov (stronger drawing)",
         "repo": "kseniiaNov/hiroshi_nagai_style_LoRA",
         "file": "pytorch_lora_weights.safetensors",
@@ -66,6 +89,12 @@ STYLES: dict[str, dict[str, str]] = {
         "negative": CITY_POP_NEGATIVE,
     },
     "impressionist": {
+        "steps": 28,
+        "guidance": 6.5,
+        "pixelate_to": 0,
+        "pixel_colors": 24,
+        "palette": "none",
+        "weight": 0.0,
         "label": "Impressionism (prompt only)",
         "repo": "",
         "file": "",
@@ -77,11 +106,30 @@ STYLES: dict[str, dict[str, str]] = {
         "negative": IMPRESSIONIST_NEGATIVE,
     },
     "monet": {
+        "steps": 26,
+        "guidance": 6.5,
+        "pixelate_to": 0,
+        "pixel_colors": 24,
+        "palette": "none",
+        "weight": 0.6,
         "label": "Impressionism, Monet LoRA",
         "repo": "SedatAl/monet-style-lora-0",
         "file": "pytorch_lora_weights.safetensors",
         "prefix": "in the style of Claude Monet, impressionist oil painting, ",
         "negative": IMPRESSIONIST_NEGATIVE,
+    },
+    "pixel": {
+        "steps": 28,
+        "guidance": 6.0,
+        "pixelate_to": 192,
+        "pixel_colors": 32,
+        "palette": "none",
+        "weight": 1.0,
+        "label": "Pixel art (nerijs/pixel-art-xl)",
+        "repo": "nerijs/pixel-art-xl",
+        "file": "pixel-art-xl.safetensors",
+        "prefix": "pixel art, ",
+        "negative": PIXEL_NEGATIVE,
     },
 }
 
@@ -111,6 +159,8 @@ class Request:
     seed: int = -1
     palette: str = "none"
     palette_strength: float = 0.7
+    pixelate_to: int = 0
+    pixel_colors: int = 24
 
 
 @dataclass
@@ -230,6 +280,31 @@ def quantize(image: Image.Image, palette: str, strength: float) -> Image.Image:
     return Image.fromarray(mixed.reshape(h, w, 3).clip(0, 255).astype(np.uint8))
 
 
+def pixelate(image: Image.Image, target_h: int, colors: int) -> Image.Image:
+    """
+    Downscale, quantise, then upscale with nearest neighbour so the grid stays
+    hard.
+
+    Two details matter. The scale factor is forced to a whole number, otherwise
+    the blocks land on fractional boundaries and come out as uneven rectangles.
+    And the downscale uses a box filter rather than Lanczos: Lanczos rings
+    around edges, and after quantisation that ringing survives as isolated
+    stray pixels in flat areas such as grass and sky.
+    """
+    w, h = image.size
+    factor = max(1, round(h / max(8, target_h)))
+    small_w = max(8, w // factor)
+    small_h = max(8, h // factor)
+
+    small = image.resize((small_w, small_h), Image.BOX)
+    small = small.quantize(
+        colors=max(2, min(256, colors)),
+        method=Image.Quantize.MEDIANCUT,
+        dither=Image.Dither.NONE,
+    ).convert("RGB")
+    return small.resize((small_w * factor, small_h * factor), Image.NEAREST)
+
+
 def generate(req: Request, out_dir: str, on_step: Callable[[int, int], None] | None = None):
     with _LOCK:
         pipe = _build()
@@ -264,6 +339,9 @@ def generate(req: Request, out_dir: str, on_step: Callable[[int, int], None] | N
 
         if req.palette != "none":
             image = quantize(image, req.palette, req.palette_strength)
+
+        if req.pixelate_to > 0:
+            image = pixelate(image, req.pixelate_to, req.pixel_colors)
 
         os.makedirs(out_dir, exist_ok=True)
         name = f"{int(time.time() * 1000)}-{seed}.png"

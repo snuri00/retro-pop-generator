@@ -55,6 +55,15 @@
         <input type="range" id="pstrength" min="0" max="1" step="0.05" value="0.7" />
       </div>
 
+      <label class="cap" for="pixelate">Pixelate</label>
+      <select id="pixelate"></select>
+      <p class="note">Downscale, quantise, then upscale with a hard grid.</p>
+
+      <div class="row" id="pixelColorsRow" hidden>
+        <label class="cap">Colours <b id="pixelColorsVal">24</b></label>
+        <input type="range" id="pixelColors" min="4" max="64" step="2" value="24" />
+      </div>
+
       <label class="cap" for="seed">Seed</label>
       <div class="seed">
         <input type="number" id="seed" value="-1" />
