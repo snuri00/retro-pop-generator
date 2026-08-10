@@ -26,28 +26,66 @@ from PIL import Image
 
 from palettes import palette_rgb
 
-BASE_MODEL = os.environ.get("LIDO_BASE", "stabilityai/stable-diffusion-xl-base-1.0")
+BASE_MODEL = os.environ.get("RETROPOP_BASE", "stabilityai/stable-diffusion-xl-base-1.0")
+
+BASE_NEGATIVE = (
+    "text, letters, words, watermark, signature, signed, autograph, artist name, "
+    "handwriting, caption, frame, border, blurry, low quality, jpeg artifacts"
+)
+
+CITY_POP_NEGATIVE = (
+    f"{BASE_NEGATIVE}, photo, photorealistic, 3d render, people, faces, "
+    "black outlines, comic line art, cluttered"
+)
+
+IMPRESSIONIST_NEGATIVE = (
+    f"{BASE_NEGATIVE}, photo, photorealistic, 3d render, digital art, vector, "
+    "flat colour, hard edges, black outlines, cel shading, anime, cgi, smooth gradients"
+)
 
 STYLES: dict[str, dict[str, str]] = {
-    "none": {"label": "None (prompt only)", "repo": "", "file": "", "prefix": ""},
+    "none": {
+        "label": "None (prompt only)",
+        "repo": "",
+        "file": "",
+        "prefix": "",
+        "negative": BASE_NEGATIVE,
+    },
     "kappa": {
-        "label": "KappaNeuro (stable colour)",
+        "label": "City pop, KappaNeuro (stable colour)",
         "repo": "KappaNeuro/hiroshi-nagai-style",
         "file": "Hiroshi Nagai Style.safetensors",
         "prefix": "Hiroshi Nagai Style - ",
+        "negative": CITY_POP_NEGATIVE,
     },
     "ksenii": {
-        "label": "kseniiaNov (stronger drawing)",
+        "label": "City pop, kseniiaNov (stronger drawing)",
         "repo": "kseniiaNov/hiroshi_nagai_style_LoRA",
         "file": "pytorch_lora_weights.safetensors",
         "prefix": "Hiroshi Nagai style, ",
+        "negative": CITY_POP_NEGATIVE,
+    },
+    "impressionist": {
+        "label": "Impressionism (prompt only)",
+        "repo": "",
+        "file": "",
+        "prefix": (
+            "impressionist oil painting, loose visible brushstrokes, broken colour, "
+            "dappled natural light, plein air, thick impasto texture on canvas, "
+            "soft edges, 19th century french painting, "
+        ),
+        "negative": IMPRESSIONIST_NEGATIVE,
+    },
+    "monet": {
+        "label": "Impressionism, Monet LoRA",
+        "repo": "SedatAl/monet-style-lora-0",
+        "file": "pytorch_lora_weights.safetensors",
+        "prefix": "in the style of Claude Monet, impressionist oil painting, ",
+        "negative": IMPRESSIONIST_NEGATIVE,
     },
 }
 
-DEFAULT_NEGATIVE = (
-    "photo, photorealistic, 3d render, blurry, text, watermark, signature, "
-    "people, faces, black outlines, comic line art, cluttered, low quality"
-)
+DEFAULT_NEGATIVE = CITY_POP_NEGATIVE
 
 SIZES: dict[str, tuple[int, int]] = {
     "square": (768, 768),

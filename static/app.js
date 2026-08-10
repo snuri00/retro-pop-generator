@@ -46,6 +46,7 @@ const PALETTE_LABELS = {
 
 let polling = null;
 let ready = false;
+let styleNegatives = {};
 
 const bind = (range, out, digits) => {
   const sync = () => {
@@ -67,7 +68,16 @@ const refreshGo = () => {
 els.prompt.addEventListener("input", refreshGo);
 
 els.style.addEventListener("change", () => {
-  els.weightRow.hidden = els.style.value === "none";
+  const spec = styleNegatives[els.style.value];
+  els.weightRow.hidden = !spec || !spec.hasLora;
+
+  const current = els.negative.value.trim();
+  const isUntouched = Object.values(styleNegatives).some(
+    (s) => s.negative.trim() === current,
+  );
+  if (spec && (current === "" || isUntouched)) {
+    els.negative.value = spec.negative;
+  }
 });
 
 els.palette.addEventListener("change", () => {
@@ -81,15 +91,20 @@ els.randomSeed.addEventListener("click", () => {
 async function boot() {
   const cfg = await fetch("/api/config").then((r) => r.json());
 
-  if (!els.negative.value) {
-    els.negative.value = cfg.defaultNegative;
-  }
+  styleNegatives = Object.fromEntries(
+    cfg.styles.map((s) => [
+      s.id,
+      { negative: s.negative, hasLora: s.id !== "none" && s.id !== "impressionist" },
+    ]),
+  );
 
   if (!els.style.options.length) {
     els.style.innerHTML = cfg.styles
       .map((s) => `<option value="${s.id}">${s.label}</option>`)
       .join("");
     els.style.value = "ksenii";
+    els.negative.value = styleNegatives.ksenii.negative;
+    els.weightRow.hidden = false;
 
     els.size.innerHTML = cfg.sizes
       .map((s) => `<option value="${s}">${SIZE_LABELS[s] || s}</option>`)

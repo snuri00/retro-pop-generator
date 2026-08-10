@@ -88,7 +88,10 @@ def _worker() -> None:
 def config():
     return {
         "ready": _ready["value"],
-        "styles": [{"id": k, "label": v["label"]} for k, v in engine.STYLES.items()],
+        "styles": [
+            {"id": k, "label": v["label"], "negative": v["negative"]}
+            for k, v in engine.STYLES.items()
+        ],
         "sizes": list(engine.SIZES),
         "palettes": ["none", *PALETTE_NAMES],
         "defaultNegative": engine.DEFAULT_NEGATIVE,
