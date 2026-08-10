@@ -1,4 +1,4 @@
-"""Retro Pop - Generator — a local web UI for resort illustration on SDXL."""
+"""Retro Pop - Generator, a local web UI for resort illustration on SDXL."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ import json
 import os
 import queue
 import threading
+import time
 import uuid
 
 import uvicorn
@@ -16,6 +17,9 @@ from pydantic import BaseModel
 
 import engine
 from palettes import PALETTE_NAMES
+
+HOST = os.environ.get("RETROPOP_HOST", "127.0.0.1")
+PORT = int(os.environ.get("RETROPOP_PORT", "7801"))
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "out")
@@ -44,8 +48,10 @@ class GenerateBody(BaseModel):
 
 
 def _worker() -> None:
+    started = time.time()
     engine.warm()
     _ready["value"] = True
+    print(f"  model ready in {time.time() - started:.0f}s\n", flush=True)
     while True:
         job_id = _queue.get()
         job = _jobs[job_id]
@@ -133,5 +139,12 @@ def image(name: str):
 app.mount("/", StaticFiles(directory=os.path.join(HERE, "static"), html=True))
 
 if __name__ == "__main__":
+    url = f"http://{HOST}:{PORT}"
+    print(f"\n  Retro Pop - Generator")
+    print(f"  listening on {HOST}:{PORT}")
+    print(f"  open  {url}\n")
+    print("  loading SDXL, the page shows 'ready' when it can generate.")
+    print("  the first run also downloads the model, about 7 GB.", flush=True)
+
     threading.Thread(target=_worker, daemon=True).start()
-    uvicorn.run(app, host="127.0.0.1", port=7801, log_level="warning")
+    uvicorn.run(app, host=HOST, port=PORT, log_level="warning")
