@@ -22,20 +22,50 @@ takes about 55 seconds on an RTX 3050 Laptop 4 GB.
 These defaults were not guessed. They came out of a measured sweep, documented
 below.
 
-**Style model.** Three options.
+**Style.** Picking one applies a whole preset, not just an adapter: weight,
+steps, guidance, pixelation and palette all move with it. The negative prompt
+moves too, but only while it is still a preset, since typed text is expensive
+to lose and a slider is not.
 
-- `none` is prompt only. It already produces credible city pop, because SDXL
-  knows the idiom. Use it as the control.
-- `kappa` (KappaNeuro/hiroshi-nagai-style) is colour stable. Measured sky red
-  channel stays between 9% and 15% across the full weight range.
-- `ksenii` (kseniiaNov/hiroshi_nagai_style_LoRA) is the strongest draughtsman of
-  the three. Palms, clouds, foliage and water read best. But its sky drifts to
-  magenta as weight rises: red channel 23% at 0.35, 30% at 0.70, **75% at 1.0**.
+| style | LoRA | weight | steps | guidance | pixelate |
+|---|---|---|---|---|---|
+| None | | | 24 | 6.0 | off |
+| City pop, KappaNeuro | KappaNeuro/hiroshi-nagai-style | 0.35 | 24 | 6.0 | off |
+| City pop, kseniiaNov | kseniiaNov/hiroshi_nagai_style_LoRA | 0.35 | 24 | 6.0 | off |
+| Impressionism | | | 28 | 6.5 | off |
+| Impressionism, Monet | SedatAl/monet-style-lora-0 | 0.6 | 26 | 6.5 | off |
+| Ghibli-like | artificialguybr/StudioGhibli.Redmond-V2 | 0.6 | 30 | 6.5 | off |
+| Pixel art | nerijs/pixel-art-xl | 1.0 | 28 | 6.0 | 192 px |
 
-**Style weight.** Defaults to 0.35, which the sweep found to be the sweet spot:
-strong enough to shape the drawing, low enough that the sky stays ultramarine.
-`ksenii` at 1.0 draws better and colours worse, and the colour cannot be fixed
-afterwards, so the low weight wins.
+A pattern came out of testing these. A LoRA earns its place when the style has
+a formal grammar SDXL smooths over, or when the subject is too niche to be well
+represented. For a canonical movement a prompt is already enough.
+
+- **City pop.** SDXL does not know Hiroshi Nagai, so the adapter carries real
+  weight. `kappa` is colour stable, red channel between 9% and 15% across the
+  range. `ksenii` draws better but its sky drifts to magenta as weight rises:
+  red channel 23% at 0.35, 30% at 0.70, **75% at 1.0**. Hence 0.35.
+- **Impressionism.** SDXL knows it well, so prompt only is already strong and
+  is kept as its own entry. The Monet adapter at 0.6 pushes toward Giverny with
+  brighter greens; going from 0.6 to 1.0 adds almost nothing.
+- **Pixel art.** The adapter gives the look, the pixelate pass gives the grid.
+  At full strength it costs prompt adherence: a "full body shot" request came
+  back as a wide landscape. Drop toward 0.65 when framing matters more.
+- **Ghibli-like.** Style quality is flat between 0.6 and 0.8, so the lower
+  weight wins on adherence: at 0.6 the "single figure waiting" in the prompt
+  is there, at 0.8 it is gone.
+
+The same thing showed up three times, in different forms. Raising the weight
+past the sweet spot does not make the style stronger, it makes the prompt
+weaker: `ksenii` lost its colour at 1.0, pixel art lost its framing, Ghibli
+lost a subject. When a render ignores part of the prompt, try lowering the
+style weight before rewriting the prompt.
+
+**Pixelate.** Downscale, quantise, upscale with nearest neighbour. The scale
+factor is forced to a whole number, otherwise blocks land on fractional
+boundaries and come out as uneven rectangles. The downscale uses a box filter
+rather than Lanczos, whose ringing survives quantisation as isolated stray
+pixels across flat areas such as grass.
 
 **Palette effect.** Matches the image's Lab chroma statistics to a fixed 26
 colour palette (`noon`, `golden`, `sunset`, `dusk`) and then snaps pixels to

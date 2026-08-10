@@ -43,6 +43,11 @@ IMPRESSIONIST_NEGATIVE = (
     "flat colour, hard edges, black outlines, cel shading, anime, cgi, smooth gradients"
 )
 
+GHIBLI_NEGATIVE = (
+    f"{BASE_NEGATIVE}, photo, photorealistic, 3d render, cgi, harsh contrast, "
+    "grim, gritty, horror, dark, oversaturated, bad art, ugly, deformed, duplicated"
+)
+
 PIXEL_NEGATIVE = (
     f"{BASE_NEGATIVE}, photo, photorealistic, 3d render, painting, brushstrokes, "
     "smooth gradients, soft focus, depth of field, anti-aliased, realistic"
@@ -117,6 +122,22 @@ STYLES: dict[str, dict] = {
         "file": "pytorch_lora_weights.safetensors",
         "prefix": "in the style of Claude Monet, impressionist oil painting, ",
         "negative": IMPRESSIONIST_NEGATIVE,
+    },
+    "ghibli": {
+        "steps": 30,
+        "guidance": 6.5,
+        "pixelate_to": 0,
+        "pixel_colors": 24,
+        "palette": "none",
+        "weight": 0.6,
+        "label": "Ghibli-like painted animation",
+        "repo": "artificialguybr/StudioGhibli.Redmond-V2",
+        "file": "StudioGhibli.Redmond-StdGBRRedmAF-StudioGhibli.safetensors",
+        "prefix": (
+            "StdGBRedmAF, Studio Ghibli, hand painted animation background, "
+            "soft gouache texture, warm natural light, lush detailed scenery, "
+        ),
+        "negative": GHIBLI_NEGATIVE,
     },
     "pixel": {
         "steps": 28,
