@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Retro Pop - Generator</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <aside>
+      <header>
+        <h1>Retro Pop <span>-</span> Generator</h1>
+        <p id="status">warming the engine…</p>
+      </header>
+
+      <label class="cap" for="prompt">Prompt</label>
+      <textarea
+        id="prompt"
+        rows="4"
+        placeholder="Describe the scene. For example: an empty pool at the edge of the sea, three tall palms, one cumulus cloud."
+      ></textarea>
+
+      <details>
+        <summary>Negative prompt</summary>
+        <textarea id="negative" rows="3"></textarea>
+      </details>
+
+      <label class="cap" for="style">Style model</label>
+      <select id="style"></select>
+
+      <div class="row" id="weightRow">
+        <label class="cap">Style strength <b id="weightVal">0.35</b></label>
+        <input type="range" id="weight" min="0" max="1" step="0.05" value="0.35" />
+      </div>
+
+      <label class="cap" for="size">Format</label>
+      <select id="size"></select>
+
+      <div class="row">
+        <label class="cap">Steps <b id="stepsVal">24</b></label>
+        <input type="range" id="steps" min="8" max="40" step="1" value="24" />
+      </div>
+
+      <div class="row">
+        <label class="cap">Guidance <b id="guidanceVal">6.0</b></label>
+        <input type="range" id="guidance" min="1" max="12" step="0.5" value="6" />
+      </div>
+
+      <label class="cap" for="palette">Palette effect</label>
+      <select id="palette"></select>
+      <p class="note">A stylistic posterise, not a colour correction.</p>
+
+      <div class="row" id="paletteRow" hidden>
+        <label class="cap">Palette strength <b id="pstrengthVal">0.70</b></label>
+        <input type="range" id="pstrength" min="0" max="1" step="0.05" value="0.7" />
+      </div>
+
+      <label class="cap" for="seed">Seed</label>
+      <div class="seed">
+        <input type="number" id="seed" value="-1" />
+        <button id="randomSeed" type="button">random</button>
+      </div>
+
+      <button id="go" class="primary" type="button" disabled>Generate</button>
+      <p class="hint">About 55 seconds per image.</p>
+    </aside>
+
+    <main>
+      <section id="stage">
+        <div id="placeholder">
+          <p>Write a prompt and press Generate.</p>
+        </div>
+        <img id="result" hidden alt="" />
+        <div id="progress" hidden>
+          <div class="bar"><i></i></div>
+          <span id="progressText"></span>
+        </div>
+      </section>
+      <section id="galleryWrap">
+        <div class="cap">History</div>
+        <div id="gallery"></div>
+        <p id="galleryEmpty" class="note">Nothing yet.</p>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
