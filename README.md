@@ -24,11 +24,11 @@ below.
 
 **Style model.** Three options.
 
-- `none` — prompt only. Already produces credible city pop, because SDXL knows
-  the idiom. Use it as the control.
-- `kappa` (KappaNeuro/hiroshi-nagai-style) — colour stable. Measured sky red
+- `none` is prompt only. It already produces credible city pop, because SDXL
+  knows the idiom. Use it as the control.
+- `kappa` (KappaNeuro/hiroshi-nagai-style) is colour stable. Measured sky red
   channel stays between 9% and 15% across the full weight range.
-- `ksenii` (kseniiaNov/hiroshi_nagai_style_LoRA) — the strongest draughtsman of
+- `ksenii` (kseniiaNov/hiroshi_nagai_style_LoRA) is the strongest draughtsman of
   the three. Palms, clouds, foliage and water read best. But its sky drifts to
   magenta as weight rises: red channel 23% at 0.35, 30% at 0.70, **75% at 1.0**.
 
