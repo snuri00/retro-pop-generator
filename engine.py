@@ -48,6 +48,16 @@ GHIBLI_NEGATIVE = (
     "grim, gritty, horror, dark, oversaturated, bad art, ugly, deformed, duplicated"
 )
 
+FELT_NEGATIVE = (
+    f"{BASE_NEGATIVE}, photo of a real animal, photorealistic, 3d render, cgi, "
+    "smooth plastic, glossy, digital painting, flat vector, harsh lighting, gritty"
+)
+
+KNIT_NEGATIVE = (
+    f"{BASE_NEGATIVE}, photo of a real animal, photorealistic, 3d render, cgi, "
+    "smooth plastic, glossy, digital painting, flat vector, harsh lighting"
+)
+
 PIXEL_NEGATIVE = (
     f"{BASE_NEGATIVE}, photo, photorealistic, 3d render, painting, brushstrokes, "
     "smooth gradients, soft focus, depth of field, anti-aliased, realistic"
@@ -139,6 +149,40 @@ STYLES: dict[str, dict] = {
         ),
         "negative": GHIBLI_NEGATIVE,
     },
+    "felt": {
+        "steps": 28,
+        "guidance": 6.5,
+        "pixelate_to": 0,
+        "pixel_colors": 24,
+        "palette": "none",
+        "weight": 0.0,
+        "label": "Felted wool miniature",
+        "repo": "",
+        "file": "",
+        "prefix": (
+            "needle felted wool figure, handmade felt craft, soft fuzzy wool fibres, "
+            "miniature diorama, stop motion puppet, tabletop set, soft studio light, "
+            "shallow depth of field, cute, "
+        ),
+        "negative": FELT_NEGATIVE,
+    },
+    "knit": {
+        "steps": 28,
+        "guidance": 6.5,
+        "pixelate_to": 0,
+        "pixel_colors": 24,
+        "palette": "none",
+        "weight": 0.45,
+        "label": "Knitted wool yarn",
+        "repo": "RalFinger/wool-style-sdxl-lora",
+        "file": "zwuul-sdxl.safetensors",
+        "prefix": (
+            "zwuul, knitted wool yarn, chunky visible knit stitches, crochet texture, "
+            "handmade yarn craft, miniature diorama, tabletop set, soft studio light, "
+            "shallow depth of field, cute, "
+        ),
+        "negative": KNIT_NEGATIVE,
+    },
     "pixel": {
         "steps": 28,
         "guidance": 6.0,
@@ -156,11 +200,15 @@ STYLES: dict[str, dict] = {
 
 DEFAULT_NEGATIVE = CITY_POP_NEGATIVE
 
+# SDXL was trained on a fixed set of aspect buckets. Generating off-bucket, as
+# 960x640 is, costs coherence. These are the real ones, plus a fast 768 square
+# for iteration.
 SIZES: dict[str, tuple[int, int]] = {
-    "square": (768, 768),
-    "landscape": (960, 640),
-    "portrait": (640, 960),
-    "wide": (1024, 576),
+    "square": (1024, 1024),
+    "landscape": (1216, 832),
+    "portrait": (832, 1216),
+    "wide": (1344, 768),
+    "draft": (768, 768),
 }
 
 _LOCK = threading.Lock()

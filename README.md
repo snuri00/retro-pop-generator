@@ -35,6 +35,8 @@ to lose and a slider is not.
 | Impressionism | | | 28 | 6.5 | off |
 | Impressionism, Monet | SedatAl/monet-style-lora-0 | 0.6 | 26 | 6.5 | off |
 | Ghibli-like | artificialguybr/StudioGhibli.Redmond-V2 | 0.6 | 30 | 6.5 | off |
+| Felted wool | | | 28 | 6.5 | off |
+| Knitted wool | RalFinger/wool-style-sdxl-lora | 0.45 | 28 | 6.5 | off |
 | Pixel art | nerijs/pixel-art-xl | 1.0 | 28 | 6.0 | 192 px |
 
 A pattern came out of testing these. A LoRA earns its place when the style has
@@ -54,11 +56,29 @@ represented. For a canonical movement a prompt is already enough.
 - **Ghibli-like.** Style quality is flat between 0.6 and 0.8, so the lower
   weight wins on adherence: at 0.6 the "single figure waiting" in the prompt
   is there, at 0.8 it is gone.
+- **Felted wool.** Prompt only again, and the second case where a movement
+  turned out to be well represented in the base model. Handmade craft is
+  heavily and correctly labelled in web images, so SDXL renders visible wool
+  fibres without help. Three words carry it: `soft fuzzy wool fibres` for the
+  surface, `miniature diorama` for the scale, `shallow depth of field` for the
+  macro look that tells the eye this is a small object on a table.
+- **Knitted wool.** `RalFinger/wool-style-sdxl-lora` was tested as a felting
+  adapter and lost to the plain prompt, but it does something else well: chunky
+  visible knit stitches, a different craft. It was kept under the name of what
+  it actually produces rather than the name it was tried for. At 0.7 it repaints
+  the subject in its training palette and the prompt cannot stop it: "a small
+  **white** sheep" came back green, mean body colour `126,127,86`. At 0.45 the
+  same seed and prompt gives a white sheep, `184,174,157`, with the stitches
+  still clearly there. Hence 0.45.
 
-The same thing showed up three times, in different forms. Raising the weight
+So the rule holds in both directions. City pop and pixel art need adapters,
+impressionism and needle felting do not, and it is worth generating the
+prompt-only version first before assuming a download is needed.
+
+The same thing showed up four times, in different forms. Raising the weight
 past the sweet spot does not make the style stronger, it makes the prompt
 weaker: `ksenii` lost its colour at 1.0, pixel art lost its framing, Ghibli
-lost a subject. When a render ignores part of the prompt, try lowering the
+lost a subject, knitted wool overrode an explicit colour word. When a render ignores part of the prompt, try lowering the
 style weight before rewriting the prompt.
 
 **Pixelate.** Downscale, quantise, upscale with nearest neighbour. The scale
@@ -88,12 +108,20 @@ the output becomes flat airbrushed and calm. The default is prefilled.
 **Steps / guidance.** 24 steps and guidance 6.0 with DPM++ 2M Karras. Higher
 guidance pushes toward posterised oversaturation.
 
+**Size.** The options are SDXL's own training buckets, 1024×1024, 1216×832,
+832×1216 and 1344×768, plus a 768 square for fast iteration. Generating off
+bucket costs coherence for nothing.
+
 ## What was measured
 
 | model | w=0.35 | w=0.70 | w=1.00 |
 |---|---|---|---|
 | kappa, sky red channel | 9% | 13% | 15% |
 | ksenii, sky red channel | 23% | 30% | 75% |
+
+| knit, "white sheep" body colour | w=0.45 | w=0.70 |
+|---|---|---|
+| mean RGB | 184,174,157 | 126,127,86 |
 
 An earlier sweep reported no difference between weights 0.8 and 1.0. That was a
 bug: `fuse_lora(lora_scale=...)` is ignored by this diffusers version, and the
